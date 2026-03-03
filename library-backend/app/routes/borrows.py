@@ -44,13 +44,11 @@ def borrow_book():
 
 @borrows_bp.route("/<int:record_id>/return", methods=["PUT"])
 @jwt_required
+@role_required("librarian", "admin")
 def return_book(record_id):
-    user   = request.current_user
+    """Only librarians and admins can mark a book as returned."""
     record = BorrowRecord.query.get_or_404(record_id)
 
-    # Members can only return their own records; librarian/admin can return any
-    if user.role == "member" and record.user_id != user.id:
-        return jsonify({"error": "Not your borrow record"}), 403
     if record.status == "returned":
         return jsonify({"error": "Already returned"}), 409
 
@@ -59,9 +57,8 @@ def return_book(record_id):
     record.book.available_copies += 1
 
     db.session.commit()
-    log_activity(user.id, "return", "book", record.book_id)
+    log_activity(request.current_user.id, "return", "book", record.book_id)
     return jsonify(record.to_dict())
-
 
 @borrows_bp.route("", methods=["GET"])
 @jwt_required

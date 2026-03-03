@@ -1,3 +1,4 @@
+import re
 from flask import Blueprint, request, jsonify
 from app.extensions import db, bcrypt
 from app.models.user import User
@@ -6,6 +7,19 @@ from app.services.activity_service import log_activity
 import jwt
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
+
+
+def _check_password_strength(password):
+    """Return an error string if password fails strength requirements, else None."""
+    if len(password) < 8:
+        return "Password must be at least 8 characters"
+    if not re.search(r'[A-Z]', password):
+        return "Password must contain at least one uppercase letter"
+    if not re.search(r'[0-9]', password):
+        return "Password must contain at least one number"
+    if not re.search(r'[!@#$%^&*(),.?\":{}|<>_\-]', password):
+        return "Password must contain at least one special character (!@#$%^ etc.)"
+    return None
 
 
 @auth_bp.route("/register", methods=["POST"])
@@ -17,8 +31,9 @@ def register():
 
     if not name or not email or not password:
         return jsonify({"error": "name, email, and password are required"}), 400
-    if len(password) < 6:
-        return jsonify({"error": "Password must be at least 6 characters"}), 400
+    pw_error = _check_password_strength(password)
+    if pw_error:
+        return jsonify({"error": pw_error}), 400
     if User.query.filter_by(email=email).first():
         return jsonify({"error": "Email already registered"}), 409
 

@@ -4,12 +4,30 @@ import api from "../services/api";
 export default function Overdue() {
     const [records, setRecords] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [returning, setReturning] = useState({});
+    const [msg, setMsg] = useState({});
 
-    useEffect(() => {
+    const fetchOverdue = () => {
+        setLoading(true);
         api.get("/analytics/overdue")
             .then(({ data }) => setRecords(data))
             .finally(() => setLoading(false));
-    }, []);
+    };
+
+    useEffect(() => { fetchOverdue(); }, []);
+
+    const handleReturn = async (id) => {
+        setReturning((r) => ({ ...r, [id]: true }));
+        try {
+            await api.put(`/borrows/${id}/return`);
+            setMsg((m) => ({ ...m, [id]: "success" }));
+            fetchOverdue(); // refresh list
+        } catch (err) {
+            setMsg((m) => ({ ...m, [id]: err.response?.data?.error || "Failed" }));
+        } finally {
+            setReturning((r) => ({ ...r, [id]: false }));
+        }
+    };
 
     if (loading)
         return <div className="center" style={{ minHeight: "60vh" }}><div className="spinner" /></div>;
@@ -29,7 +47,10 @@ export default function Overdue() {
                     <div className="table-wrap">
                         <table>
                             <thead>
-                                <tr><th>Member</th><th>Email</th><th>Book</th><th>Due Date</th><th>Days Overdue</th></tr>
+                                <tr>
+                                    <th>Member</th><th>Email</th><th>Book</th>
+                                    <th>Due Date</th><th>Days Overdue</th><th>Action</th>
+                                </tr>
                             </thead>
                             <tbody>
                                 {records.map((r) => (
@@ -42,6 +63,26 @@ export default function Overdue() {
                                         </td>
                                         <td>
                                             <span className="badge badge-red">{r.days_overdue} day{r.days_overdue !== 1 ? "s" : ""}</span>
+                                        </td>
+                                        <td>
+                                            {msg[r.id] === "success" ? (
+                                                <span className="badge badge-green">Returned ✓</span>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        className="btn btn-accent btn-sm"
+                                                        onClick={() => handleReturn(r.id)}
+                                                        disabled={returning[r.id]}
+                                                    >
+                                                        {returning[r.id] ? "…" : "Mark Returned"}
+                                                    </button>
+                                                    {msg[r.id] && (
+                                                        <span style={{ color: "var(--clr-danger)", fontSize: "0.8rem", marginLeft: 6 }}>
+                                                            {msg[r.id]}
+                                                        </span>
+                                                    )}
+                                                </>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}

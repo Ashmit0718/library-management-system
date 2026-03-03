@@ -15,11 +15,13 @@ api.interceptors.request.use((config) => {
 });
 
 // On 401 → try refresh, then retry original request
+// Skip this logic for auth routes themselves (login, refresh, register)
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config;
-    if (error.response?.status === 401 && !original._retry) {
+    const isAuthRoute = original.url?.includes("/auth/");
+    if (error.response?.status === 401 && !original._retry && !isAuthRoute) {
       original._retry = true;
       const refresh = localStorage.getItem("refresh_token");
       if (refresh) {
@@ -27,7 +29,7 @@ api.interceptors.response.use(
           const { data } = await axios.post(`${API_BASE}/auth/refresh`, {
             refresh_token: refresh,
           });
-          localStorage.setItem("access_token",  data.access_token);
+          localStorage.setItem("access_token", data.access_token);
           localStorage.setItem("refresh_token", data.refresh_token);
           original.headers.Authorization = `Bearer ${data.access_token}`;
           return api(original);

@@ -15,8 +15,11 @@ export default function Register() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
-        if (form.password.length < 6) {
-            setError("Password must be at least 6 characters");
+        if (form.password.length < 8 ||
+            !/[A-Z]/.test(form.password) ||
+            !/[0-9]/.test(form.password) ||
+            !/[!@#$%^&*(),.?":{}|<>_\-]/.test(form.password)) {
+            setError("Password needs: 8+ chars · uppercase · number · special char");
             return;
         }
         setLoading(true);
@@ -50,7 +53,10 @@ export default function Register() {
                     <div className="form-group">
                         <label className="form-label">Password</label>
                         <input className="form-input" name="password" type="password"
-                            placeholder="Min. 6 characters" value={form.password} onChange={handleChange} required />
+                            placeholder="e.g. Secret@123" value={form.password} onChange={handleChange} required />
+                        <span style={{ fontSize: "0.75rem", color: "var(--clr-muted)", marginTop: 2 }}>
+                            Must include: uppercase · number · special char (!@#$%^&*)
+                        </span>
                     </div>
                     <button className="btn btn-primary btn-full" type="submit" disabled={loading}>
                         {loading ? "Creating account…" : "Create Account"}

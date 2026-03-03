@@ -5,7 +5,6 @@ export default function MyBorrows() {
     const [borrows, setBorrows] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState("");
-    const [returnMsg, setReturnMsg] = useState({});
 
     const fetchBorrows = () => {
         setLoading(true);
@@ -15,16 +14,6 @@ export default function MyBorrows() {
     };
 
     useEffect(() => { fetchBorrows(); }, [filter]);
-
-    const handleReturn = async (id) => {
-        try {
-            await api.put(`/borrows/${id}/return`);
-            setReturnMsg((m) => ({ ...m, [id]: "success" }));
-            fetchBorrows();
-        } catch (err) {
-            setReturnMsg((m) => ({ ...m, [id]: err.response?.data?.error || "Failed" }));
-        }
-    };
 
     const statusBadge = (s) => {
         if (s === "returned") return <span className="badge badge-green">Returned</span>;
@@ -56,7 +45,7 @@ export default function MyBorrows() {
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Book</th><th>Borrowed</th><th>Due Date</th><th>Status</th><th>Action</th>
+                                    <th>Book</th><th>Borrowed</th><th>Due Date</th><th>Status</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -70,17 +59,6 @@ export default function MyBorrows() {
                                             {new Date(r.due_date).toLocaleDateString()}
                                         </td>
                                         <td>{statusBadge(r.status)}</td>
-                                        <td>
-                                            {r.status === "borrowed" && (
-                                                <button className="btn btn-accent btn-sm" onClick={() => handleReturn(r.id)}
-                                                    disabled={returnMsg[r.id] === "success"}>
-                                                    {returnMsg[r.id] === "success" ? "Returned ✓" : "Return"}
-                                                </button>
-                                            )}
-                                            {returnMsg[r.id] && returnMsg[r.id] !== "success" && (
-                                                <span style={{ color: "var(--clr-danger)", fontSize: "0.8rem" }}> {returnMsg[r.id]}</span>
-                                            )}
-                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
